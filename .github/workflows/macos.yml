@@ -8,6 +8,8 @@ on:
         description: "Тег Godot (версия должна совпадать с редактором)"
         default: "4.7.2-stable"
         required: true
+permissions:
+  contents: write
 jobs:
   build:
     runs-on: macos-26
@@ -40,3 +42,10 @@ jobs:
         with:
           name: macos-template-${{ inputs.godot_tag }}
           path: macos.zip
+      - name: Release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          T="macos-${{ inputs.godot_tag }}"
+          gh release delete "$T" --yes --cleanup-tag || true
+          gh release create "$T" macos.zip --title "macOS template ${{ inputs.godot_tag }}" --notes "Урезанный шаблон экспорта (openrekall_profile.py), universal: x86_64 + arm64."
