@@ -1,0 +1,42 @@
+# Урезанный шаблон экспорта Godot для macOS (OpenRekall): профиль openrekall_profile.py,
+# Intel (x86_64) + Apple Silicon (arm64) → universal, упакован как macos.zip (как официальный шаблон).
+name: macOS template
+on:
+  workflow_dispatch:
+    inputs:
+      godot_tag:
+        description: "Тег Godot (версия должна совпадать с редактором)"
+        default: "4.7.2-stable"
+        required: true
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - name: Godot source
+        run: git clone --depth 1 --branch "${{ inputs.godot_tag }}" https://github.com/godotengine/godot.git godot
+      - name: SCons
+        run: python3 -m pip install --break-system-packages scons || python3 -m pip install scons
+      - name: Build x86_64
+        working-directory: godot
+        run: scons -j$(sysctl -n hw.ncpu) platform=macos arch=x86_64 profile=../openrekall_profile.py vulkan=no metal=no angle=no lto=full
+      - name: Build arm64
+        working-directory: godot
+        run: scons -j$(sysctl -n hw.ncpu) platform=macos arch=arm64 profile=../openrekall_profile.py vulkan=no metal=no angle=no lto=full
+      - name: Package macos.zip
+        working-directory: godot
+        run: |
+          lipo -create bin/godot.macos.template_release.x86_64 bin/godot.macos.template_release.arm64 -output bin/godot.macos.template_release.universal
+          strip bin/godot.macos.template_release.universal
+          cp -R misc/dist/macos_template.app .
+          mkdir -p macos_template.app/Contents/MacOS
+          cp bin/godot.macos.template_release.universal macos_template.app/Contents/MacOS/godot_macos_release.universal
+          chmod +x macos_template.app/Contents/MacOS/godot_macos_release.universal
+          zip -q -9 -r ../macos.zip macos_template.app
+          ls -l ../macos.zip bin/
+          lipo -info bin/godot.macos.template_release.universal
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-template-${{ inputs.godot_tag }}
+          path: macos.zip
