@@ -15,7 +15,7 @@ jobs:
     runs-on: macos-26
     timeout-minutes: 180
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Godot source
         run: git clone --depth 1 --branch "${{ inputs.godot_tag }}" https://github.com/godotengine/godot.git godot
       - name: SCons
@@ -38,7 +38,7 @@ jobs:
           zip -q -9 -r ../macos.zip macos_template.app
           ls -l ../macos.zip bin/
           lipo -info bin/godot.macos.template_release.universal
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: macos-template-${{ inputs.godot_tag }}
           path: macos.zip
